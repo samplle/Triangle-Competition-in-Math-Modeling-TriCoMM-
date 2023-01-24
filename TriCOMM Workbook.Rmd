@@ -1,0 +1,132 @@
+---
+title: "TriCoMM R Notebook"
+author: "Sam Pell"
+output: html_notebook
+---
+
+***TriCoMM Workbook*** *Sam Pell, Jane Corah, and Alex Miroshnichenko*
+
+```{r}
+df = read.csv(url("https://raw.githubusercontent.com/samplle/TriCoMM/main/TriCoMM_DNC_data.csv"))
+df = df[,-1]
+
+df$AvgReduxinNighttimeAnnualTemp_Fahrenheit = df$AvgReduxinNighttimeAnnualTemp_Celsius * (9/5)
+df = df[,-1]
+df = df[,c(5,1:4)]
+
+head(df, 8)
+```
+
+Above, we load in the data set, using the read.csv() command, and store it as data frame df. Then, we remove the first column, which only contains a constant value that appears to be unimportant. Finally, we present a head of the data, which allows us to see how the data is formatted, and what values we are working with.
+
+```{r}
+poverty_mod = lm(AvgReduxinNighttimeAnnualTemp_Fahrenheit ~ PercentPopIncomeBelow2xPovertyLevel, data = df)
+greenspace_mod <- lm(AvgReduxinNighttimeAnnualTemp_Fahrenheit ~ Percent_GreenSpace, data = df)
+poverty_greenspace_mod <- lm(Percent_GreenSpace ~ PercentPopIncomeBelow2xPovertyLevel, data = df)
+
+plot(AvgReduxinNighttimeAnnualTemp_Fahrenheit ~ PercentPopIncomeBelow2xPovertyLevel, data = df)
+
+abline(poverty_mod, col = 'blue2', lw = 2)
+
+plot(AvgReduxinNighttimeAnnualTemp_Fahrenheit ~ Percent_GreenSpace, data = df)
+
+abline(greenspace_mod, col = 'coral', lw = 2)
+
+plot(Percent_GreenSpace ~ PercentPopIncomeBelow2xPovertyLevel, data = df)
+
+abline(poverty_greenspace_mod, col = 'green2', lw = 2)
+```
+
+```{r}
+plot(poverty_mod)
+plot(greenspace_mod)
+plot(poverty_greenspace_mod)
+anova(poverty_mod, greenspace_mod)
+
+summary(poverty_mod)
+summary(greenspace_mod)
+summary(poverty_greenspace_mod)
+```
+
+```{r}
+loc_mod <- lm(AvgReduxinNighttimeAnnualTemp_Fahrenheit ~ long+lat, data = df)
+plot(loc_mod)
+anova(mod1, loc_mod)
+```
+
+```{r}
+ggplot(df, aes(long, lat, color = Percent_GreenSpace)) +
+  geom_point(alpha = 0.6, size = 3.5) +
+  scale_color_gradient("% Greenspace", low = "#FFFFFF", high = "#004400")
+
+ggplot(df, aes(long, lat, color = AvgReduxinNighttimeAnnualTemp_Fahrenheit)) +
+  geom_point(alpha = 0.6, size = 3.5) + 
+  scale_color_gradient("Avg Annual Night Redux in Temp (F)", low = "#FF0000", high = "#0000FF")
+
+ggplot(df, aes(long, lat, color = PercentPopIncomeBelow2xPovertyLevel)) +
+  geom_point(alpha = 0.9, size = 3.5) +
+  scale_color_gradient("% of Pop Below 2x Poverty Rate", low = "#7851A9", high = "#FFFF00")
+```
+
+```{r}
+ggplot(df, aes(long, lat, color = AvgReduxinNighttimeAnnualTemp_Fahrenheit)) +
+  geom_point(alpha = 0.6, size = 3.5) + 
+  scale_color_gradient("Avg Annual Night Redux in Temp (C)", low = "#FF0000", high = "#0000FF") +
+  geom_point(mapping = aes(long, lat, color = PercentPopIncomeBelow2xPovertyLevel))
+```
+
+```{r}
+poverty_above_50 <- df[df$PercentPopIncomeBelow2xPovertyLevel >= 50,]
+poverty_below_50 <- df[df$PercentPopIncomeBelow2xPovertyLevel < 50,]
+redux_above_mean <- df[df$AvgReduxinNighttimeAnnualTemp_Fahrenheit >= mean(df$AvgReduxinNighttimeAnnualTemp_Fahrenheit),]
+
+mean(poverty_above_50$AvgReduxinNighttimeAnnualTemp_Fahrenheit)
+mean(poverty_below_50$AvgReduxinNighttimeAnnualTemp_Fahrenheit)
+
+t.test(poverty_above_50$AvgReduxinNighttimeAnnualTemp_Fahrenheit, poverty_below_50$AvgReduxinNighttimeAnnualTemp_Fahrenheit)
+
+mean(poverty_above_50$Percent_GreenSpace)
+mean(poverty_below_50$Percent_GreenSpace)
+
+t.test(poverty_above_50$Percent_GreenSpace, poverty_below_50$Percent_GreenSpace)
+```
+
+```{r}
+ggplot(poverty_above_50, aes(long, lat, color = Percent_GreenSpace)) +
+  geom_point(alpha = 1, size = 3.5) +
+  scale_color_gradient("% Greenspace", low = "#FFFFFF", high = "#004400")
+
+ggplot(poverty_below_50, aes(long, lat, color = Percent_GreenSpace)) +
+  geom_point(alpha = 1, size = 3.5) +
+  scale_color_gradient("% Greenspace", low = "#FFFFFF", high = "#004400")
+```
+
+```{r}
+ggplot(poverty_above_50, aes(long, lat, color = AvgReduxinNighttimeAnnualTemp_Fahrenheit)) +
+  geom_point(alpha = 1, size = 3.5) +
+  scale_color_gradient("Avg Annual Night Redux in Temp (F)", low = "#FF0000", high = "#0000FF")
+
+ggplot(poverty_below_50, aes(long, lat, color = AvgReduxinNighttimeAnnualTemp_Fahrenheit)) +
+  geom_point(alpha = 1, size = 3.5) +
+  scale_color_gradient("Avg Annual Night Redux in Temp (F)", low = "#FF0000", high = "#0000FF")
+```
+
+```{r}
+target_areas <- df[(df$long >= -79.1 & df$long <= -79.05 & df$lat >= 35.9 & df$lat <= 35.925) | (df$long >= -78.95 & df$long <= -78.85 & df$lat >= 35.975 & df$lat <= 36.025),]
+  
+#  long (-79.1<=x<=-79.05), lat (35.9<=x<=35.925), 
+#  long (-78.95<=x<=-78.85), lat(35.975<=x<=36.025)
+
+ggplot(target_areas, aes(long, lat, color = Percent_GreenSpace)) +
+  geom_point(alpha = 0.6, size = 3.5) +
+  scale_color_gradient("% Greenspace", low = "#FFFFFF", high = "#004400")
+```
+
+```{r}
+t.test(target_areas$Percent_GreenSpace, df$Percent_GreenSpace)
+
+t.test(target_areas$PercentPopIncomeBelow2xPovertyLevel, df$PercentPopIncomeBelow2xPovertyLevel)
+
+
+t.test(target_areas$AvgReduxinNighttimeAnnualTemp_Fahrenheit, df$AvgReduxinNighttimeAnnualTemp_Fahrenheit)
+```
